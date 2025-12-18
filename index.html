@@ -1,0 +1,1428 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="light dark">
+  <title>Secret Santa — Private Pairing</title>
+  <style>
+    :root{
+      --bg0:#0b1020;
+      --bg1:#0e1730;
+      --card: rgba(255,255,255,.08);
+      --card2: rgba(255,255,255,.12);
+      --stroke: rgba(255,255,255,.14);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.68);
+      --muted2: rgba(255,255,255,.55);
+      --shadow: 0 20px 60px rgba(0,0,0,.45);
+      --shadow2: 0 12px 30px rgba(0,0,0,.35);
+      --good: #25d366;
+      --bad: #ff4d4f;
+      --warn: #ffcc00;
+      --accent: #8ee3ff;
+      --accent2: #bda3ff;
+      --accent3: #a6ffcb;
+      --radius: 22px;
+      --radius2: 16px;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg0:#f7f7fb;
+        --bg1:#eef1ff;
+        --card: rgba(0,0,0,.04);
+        --card2: rgba(0,0,0,.06);
+        --stroke: rgba(0,0,0,.08);
+        --text: rgba(0,0,0,.88);
+        --muted: rgba(0,0,0,.62);
+        --muted2: rgba(0,0,0,.52);
+        --shadow: 0 20px 60px rgba(0,0,0,.12);
+        --shadow2: 0 12px 30px rgba(0,0,0,.10);
+      }
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--font);
+      color:var(--text);
+      background:
+        radial-gradient(1200px 800px at 18% 10%, rgba(142,227,255,.20), transparent 55%),
+        radial-gradient(1000px 700px at 80% 20%, rgba(189,163,255,.18), transparent 55%),
+        radial-gradient(1000px 700px at 60% 90%, rgba(166,255,203,.14), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
+
+    .wrap{max-width:1100px;margin:0 auto;padding:32px 18px 60px;position:relative}
+    header{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+    .brand{
+      display:flex;flex-direction:column;gap:8px;
+    }
+    .title{
+      font-size:clamp(28px, 4.5vw, 44px);
+      letter-spacing:-0.03em;
+      margin:0;
+      line-height:1.1;
+    }
+    .subtitle{
+      margin:0;
+      color:var(--muted);
+      max-width:56ch;
+      line-height:1.45;
+    }
+
+    .pillbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .pill{
+      display:inline-flex;align-items:center;gap:10px;
+      background:var(--card);
+      border:1px solid var(--stroke);
+      border-radius:999px;
+      padding:10px 12px;
+      box-shadow: var(--shadow2);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .switch{
+      position:relative;width:44px;height:26px;border-radius:999px;
+      background:rgba(255,255,255,.16);
+      border:1px solid var(--stroke);
+      cursor:pointer;transition:transform .12s ease, background .2s ease;
+      display:inline-flex;align-items:center;padding:2px;
+    }
+    .switch:active{transform:scale(.98)}
+    .knob{
+      width:22px;height:22px;border-radius:50%;
+      background:rgba(255,255,255,.92);
+      transform:translateX(0);
+      transition:transform .22s cubic-bezier(.2,.8,.2,1);
+    }
+    .switch[data-on="true"]{background:rgba(37,211,102,.35)}
+    .switch[data-on="true"] .knob{transform:translateX(18px)}
+    .pill .label{font-size:13px;color:var(--muted)}
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:18px;
+      align-items:start;
+      margin-top:14px;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns:1fr}
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--stroke);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      overflow:hidden;
+    }
+    .card .inner{padding:18px}
+    .card h2{
+      margin:0 0 10px;
+      font-size:18px;
+      letter-spacing:-0.01em;
+    }
+    .card p{margin:0;color:var(--muted);line-height:1.5}
+
+    .divider{height:1px;background:var(--stroke);margin:14px 0}
+
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}
+    .col{flex:1;min-width:220px}
+    label{
+      display:block;
+      font-size:13px;
+      color:var(--muted);
+      margin:10px 0 6px;
+    }
+    input, select, textarea{
+      width:100%;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.06);
+      color:var(--text);
+      outline:none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+      transition: border-color .2s ease, transform .12s ease, background .2s ease;
+      font-family:var(--font);
+    }
+    textarea{min-height:160px;resize:vertical;font-family:var(--font);line-height:1.45}
+    input:focus, select:focus, textarea:focus{border-color: rgba(142,227,255,.45); background: rgba(255,255,255,.08)}
+    input::placeholder, textarea::placeholder{color: var(--muted2)}
+    .mono{font-family:var(--mono)}
+    .btnbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+    button{
+      appearance:none;border:none;cursor:pointer;
+      padding:12px 14px;border-radius:14px;
+      background: rgba(255,255,255,.14);
+      color:var(--text);
+      border: 1px solid var(--stroke);
+      box-shadow: var(--shadow2);
+      transition: transform .12s ease, background .2s ease, border-color .2s ease;
+      font-weight:600;
+      letter-spacing:-0.01em;
+    }
+    button:hover{background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.2)}
+    button:active{transform:scale(.985)}
+    .primary{
+      background: linear-gradient(135deg, rgba(142,227,255,.35), rgba(189,163,255,.28));
+      border-color: rgba(142,227,255,.35);
+    }
+    .danger{
+      background: linear-gradient(135deg, rgba(255,77,79,.35), rgba(255,204,0,.18));
+      border-color: rgba(255,77,79,.28);
+    }
+    .ghost{
+      background: transparent;
+      box-shadow:none;
+    }
+
+    .note{
+      font-size:13px;
+      color:var(--muted);
+      background: rgba(255,255,255,.06);
+      border:1px solid var(--stroke);
+      border-radius: 14px;
+      padding:12px 12px;
+      line-height:1.45;
+    }
+    .note strong{color:var(--text)}
+    .badge{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 10px;border-radius:999px;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.07);
+      font-size:12px;color:var(--muted);
+      margin-right:8px;
+    }
+    .dot{width:8px;height:8px;border-radius:50%;}
+    .dot.good{background:var(--good)}
+    .dot.bad{background:var(--bad)}
+    .dot.warn{background:var(--warn)}
+
+    .result{
+      padding:14px 14px;
+      border-radius: 18px;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.07);
+      margin-top:12px;
+      box-shadow: var(--shadow2);
+    }
+    .result h3{margin:0 0 6px;font-size:14px;color:var(--muted)}
+    .recipient{
+      font-size:24px;
+      letter-spacing:-0.02em;
+      margin:0;
+      display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    }
+    .tiny{font-size:12px;color:var(--muted2);margin-top:8px;line-height:1.4}
+
+    .table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0 10px;
+      margin-top:10px;
+    }
+    .table th{
+      text-align:left;
+      font-size:12px;
+      color:var(--muted);
+      font-weight:600;
+      padding:0 10px 6px;
+    }
+    .table td{
+      padding:12px 10px;
+      background: rgba(255,255,255,.06);
+      border-top:1px solid var(--stroke);
+      border-bottom:1px solid var(--stroke);
+      font-size:13px;
+      color:var(--text);
+    }
+    .table td:first-child{
+      border-left:1px solid var(--stroke);
+      border-top-left-radius:14px;
+      border-bottom-left-radius:14px;
+    }
+    .table td:last-child{
+      border-right:1px solid var(--stroke);
+      border-top-right-radius:14px;
+      border-bottom-right-radius:14px;
+      color:var(--muted);
+      font-family:var(--mono);
+      font-size:12px;
+    }
+
+    .codegrid{
+      display:grid;grid-template-columns: 1fr; gap:10px; margin-top:10px;
+    }
+    .codeitem{
+      display:flex;justify-content:space-between;gap:12px;align-items:center;
+      padding:12px 12px;border-radius:16px;
+      background: rgba(255,255,255,.06);
+      border:1px solid var(--stroke);
+    }
+    .codeitem .name{font-weight:650}
+    .codeitem .code{
+      font-family:var(--mono);
+      font-size:12px;
+      color:var(--muted);
+      overflow-wrap:anywhere;
+      text-align:right;
+      user-select:all;
+    }
+
+    .jsonbox{
+      font-family:var(--mono);
+      font-size:12px;
+      line-height:1.45;
+      padding:12px 12px;
+      border-radius:16px;
+      border:1px solid var(--stroke);
+      background: rgba(0,0,0,.14);
+      color:rgba(255,255,255,.85);
+      overflow:auto;
+      max-height:320px;
+      white-space:pre-wrap;
+      word-break:break-word;
+    }
+    @media (prefers-color-scheme: light){
+      .jsonbox{background: rgba(0,0,0,.05); color: rgba(0,0,0,.78)}
+    }
+
+    footer{
+      margin-top:18px;
+      color:var(--muted2);
+      font-size:12px;
+      display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;
+      align-items:center;
+    }
+    a.link{
+      color:inherit;
+      text-decoration:none;
+      border-bottom:1px solid rgba(255,255,255,.22);
+      padding-bottom:1px;
+    }
+    a.link:hover{color:var(--text)}
+
+    /* Modal */
+    .modalOverlay{
+      position:fixed;inset:0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      align-items:center;justify-content:center;
+      padding:18px;
+      z-index:50;
+    }
+    .modalOverlay[data-open="true"]{display:flex}
+    .modal{
+      width:min(520px, 100%);
+      border-radius: 22px;
+      background: rgba(20,24,40,.72);
+      border:1px solid rgba(255,255,255,.18);
+      box-shadow: 0 30px 90px rgba(0,0,0,.55);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      overflow:hidden;
+    }
+    @media (prefers-color-scheme: light){
+      .modal{background: rgba(255,255,255,.82); border-color: rgba(0,0,0,.10)}
+    }
+    .modal .inner{padding:16px}
+    .modal h3{margin:0 0 8px}
+    .modal .actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
+
+    /* Snow canvas (festive, subtle) */
+    #snowCanvas{
+      position:fixed;inset:0;
+      pointer-events:none;
+      z-index:0;
+      opacity:.55;
+      display:none;
+    }
+    #snowCanvas[data-on="true"]{display:block}
+    .wrap{z-index:1}
+  </style>
+</head>
+<body>
+<canvas id="snowCanvas"></canvas>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1 class="title">Secret Santa</h1>
+      <p class="subtitle">
+        A privacy-first, static-only Secret Santa. Your <strong>name + secret code</strong> reveals only <em>your</em> recipient.
+      </p>
+    </div>
+
+    <div class="pillbar">
+      <div class="pill" title="Subtle festive effect (purely cosmetic)">
+        <div class="label">Snow</div>
+        <div id="snowSwitch" class="switch" role="switch" aria-label="Toggle snow" tabindex="0" data-on="false">
+          <div class="knob"></div>
+        </div>
+      </div>
+      <div class="pill" id="modePill">
+        <div class="label" id="modeLabel">Participant Mode</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- Participant -->
+    <section class="card" id="participantCard">
+      <div class="inner">
+        <h2>Participant</h2>
+        <p>Enter your name and your secret code to reveal who you’re gifting to.</p>
+
+        <div class="divider"></div>
+
+        <label for="participantName">Name</label>
+        <select id="participantName"></select>
+
+        <label for="participantCode">Secret code</label>
+        <input id="participantCode" class="mono" type="password" placeholder="Paste your secret code…" autocomplete="off" inputmode="text" />
+
+        <div class="btnbar">
+          <button class="primary" id="revealBtn">Reveal my recipient</button>
+          <button class="ghost" id="clearBtn" title="Clears the code field">Clear</button>
+        </div>
+
+        <div id="participantMsg" class="result" style="display:none"></div>
+
+        <div class="divider"></div>
+
+        <div class="note">
+          <strong>Privacy note:</strong> this page stores only encrypted recipient blobs. Without the correct secret code, nothing useful can be decrypted.
+          <div class="tiny">If you lose your code, the admin must regenerate a new round (which invalidates all previous codes).</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Admin -->
+    <section class="card" id="adminCard" style="display:none">
+      <div class="inner">
+        <h2>Admin</h2>
+        <p>Create participants, generate assignments, and publish encrypted data to GitHub Pages.</p>
+
+        <div class="divider"></div>
+
+        <div class="note">
+          <span class="badge"><span class="dot warn"></span>Important</span>
+          Regenerating creates a completely new round and <strong>invalidates all previously distributed codes</strong>.
+          Only generate when you’re ready to distribute new codes securely.
+        </div>
+
+        <label for="namesInput">Participants (one name per line)</label>
+        <textarea id="namesInput" placeholder="Alice
+Bob
+Charlie
+Dana"></textarea>
+
+        <div class="row">
+          <div class="col">
+            <label for="adminPassphrase">Admin passphrase (recommended)</label>
+            <input id="adminPassphrase" type="password" placeholder="Used only to unlock admin panel later…" autocomplete="off"/>
+            <div class="tiny">
+              This does <strong>not</strong> encrypt participant data. It only encrypts an admin unlock token stored in the JSON,
+              so the admin panel stays hidden unless the passphrase is provided.
+            </div>
+          </div>
+          <div class="col">
+            <label for="adminPassphrase2">Confirm passphrase</label>
+            <input id="adminPassphrase2" type="password" placeholder="Repeat passphrase…" autocomplete="off"/>
+          </div>
+        </div>
+
+        <div class="btnbar">
+          <button class="primary" id="generateBtn">Generate</button>
+          <button class="danger" id="lockBtn" disabled>Lock &amp; Hide Admin Mode</button>
+        </div>
+
+        <div id="adminOutput" style="display:none">
+          <div class="divider"></div>
+
+          <div id="verifySummary" class="note"></div>
+
+          <table class="table" id="verifyTable" aria-label="Admin verification table">
+            <thead>
+              <tr>
+                <th>Participant</th>
+                <th>Outgoing</th>
+                <th>Incoming</th>
+                <th>Self?</th>
+                <th>Duplicate Out?</th>
+                <th>Duplicate In?</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+
+          <div class="divider"></div>
+
+          <h2 style="margin-top:0">One-time secret codes</h2>
+          <p style="margin-top:0">Distribute each code privately to the matching participant.</p>
+          <div id="codesList" class="codegrid"></div>
+
+          <div class="divider"></div>
+
+          <h2 style="margin-top:0">Encrypted JSON to publish</h2>
+          <p style="margin-top:0">
+            Copy this JSON into the <span class="mono">ENCRYPTED_DATA</span> constant inside this file, commit, and push.
+          </p>
+          <div class="jsonbox" id="jsonOut"></div>
+
+          <div class="btnbar">
+            <button id="copyJsonBtn">Copy JSON</button>
+          </div>
+
+          <div class="tiny">
+            After you publish the locked JSON, participants can use the GitHub Pages link with their name + code.
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <div>
+      Built with Web Crypto (PBKDF2 + AES-GCM). Static-only. No trackers.
+    </div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+      <a href="#" class="link" id="adminLink">Admin</a>
+      <span>·</span>
+      <a href="#" class="link" id="aboutLink">About</a>
+    </div>
+  </footer>
+</div>
+
+<!-- Admin Unlock Modal -->
+<div class="modalOverlay" id="modal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="inner">
+      <h3 id="modalTitle">Admin Unlock</h3>
+      <div id="modalBody" class="note" style="margin-top:8px"></div>
+
+      <div id="unlockForm" style="margin-top:12px; display:none">
+        <label for="unlockPass">Admin passphrase</label>
+        <input id="unlockPass" type="password" placeholder="Enter passphrase…" autocomplete="off" />
+      </div>
+
+      <div class="actions">
+        <button class="ghost" id="modalClose">Close</button>
+        <button class="primary" id="modalPrimary">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/**
+ * ============================
+ *  CONFIG (EDIT THIS SECTION)
+ * ============================
+ * After admin generation, copy the produced JSON into ENCRYPTED_DATA and push to GitHub.
+ * - Secret codes are NEVER stored here.
+ */
+const ENCRYPTED_DATA = null;
+/*
+Example shape after generation:
+{
+  "version": 1,
+  "kdf": {"name":"PBKDF2","hash":"SHA-256","iterations":200000},
+  "cipher": {"name":"AES-GCM"},
+  "locked": true,
+  "participants": [
+    {"name":"Alice","salt":"...b64","iv":"...b64","ct":"...b64"},
+    ...
+  ],
+  "adminUnlock": {"salt":"...b64","iv":"...b64","ct":"...b64"} // optional (only if passphrase set)
+}
+*/
+
+const APP_VERSION = 1;
+const DEFAULT_ITERATIONS = 200000;
+const CODE_LENGTH_BYTES = 24; // ~32 chars base64url, meets "24+ chars" requirement
+const AES_GCM_IV_BYTES = 12;
+const SALT_BYTES = 16;
+
+// Session-only (not persisted) admin unlock:
+let adminUnlockedThisSession = false;
+
+// Admin generation staging (in-memory only):
+let staging = null; // { names, codesByName, mapping, jsonUnlocked, jsonLocked }
+
+/**
+ * ============================
+ *  UTILITIES
+ * ============================
+ */
+const $ = (id) => document.getElementById(id);
+
+function normalizeName(s){
+  return (s || "").trim().replace(/\s+/g, " ");
+}
+
+function uniq(arr){
+  const out = [];
+  const seen = new Set();
+  for(const x of arr){
+    if(!seen.has(x)){ seen.add(x); out.push(x); }
+  }
+  return out;
+}
+
+function bytesToB64(bytes){
+  const bin = String.fromCharCode(...bytes);
+  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function b64ToBytes(b64url){
+  const b64 = (b64url || "").replace(/-/g,'+').replace(/_/g,'/');
+  const pad = b64.length % 4 ? '='.repeat(4 - (b64.length % 4)) : '';
+  const str = atob(b64 + pad);
+  const out = new Uint8Array(str.length);
+  for(let i=0;i<str.length;i++) out[i] = str.charCodeAt(i);
+  return out;
+}
+
+function secureRandomBytes(n){
+  const a = new Uint8Array(n);
+  crypto.getRandomValues(a);
+  return a;
+}
+
+function randomCode(){
+  // base64url, no punctuation issues, long enough to resist guessing.
+  return bytesToB64(secureRandomBytes(CODE_LENGTH_BYTES));
+}
+
+function subtleHashString(str){
+  // Not for security. Used only to display a short fingerprint of ciphertext (admin table).
+  // FNV-1a 32-bit
+  let h = 0x811c9dc5;
+  for(let i=0;i<str.length;i++){
+    h ^= str.charCodeAt(i);
+    h = (h + ((h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24))) >>> 0;
+  }
+  return ("0000000" + h.toString(16)).slice(-8);
+}
+
+async function deriveAesKeyFromCode(code, saltBytes, iterations){
+  const enc = new TextEncoder();
+  const baseKey = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(code),
+    {name:"PBKDF2"},
+    false,
+    ["deriveKey"]
+  );
+  return crypto.subtle.deriveKey(
+    {
+      name:"PBKDF2",
+      salt: saltBytes,
+      iterations,
+      hash:"SHA-256"
+    },
+    baseKey,
+    {name:"AES-GCM", length:256},
+    false,
+    ["encrypt","decrypt"]
+  );
+}
+
+async function encryptTextWithCode(plainText, code, kdfIterations){
+  const salt = secureRandomBytes(SALT_BYTES);
+  const iv = secureRandomBytes(AES_GCM_IV_BYTES);
+  const key = await deriveAesKeyFromCode(code, salt, kdfIterations);
+  const enc = new TextEncoder();
+  const ctBuf = await crypto.subtle.encrypt(
+    {name:"AES-GCM", iv},
+    key,
+    enc.encode(plainText)
+  );
+  return {
+    salt: bytesToB64(salt),
+    iv: bytesToB64(iv),
+    ct: bytesToB64(new Uint8Array(ctBuf))
+  };
+}
+
+async function decryptTextWithCode(blob, code, kdfIterations){
+  const salt = b64ToBytes(blob.salt);
+  const iv = b64ToBytes(blob.iv);
+  const ct = b64ToBytes(blob.ct);
+  const key = await deriveAesKeyFromCode(code, salt, kdfIterations);
+  const ptBuf = await crypto.subtle.decrypt(
+    {name:"AES-GCM", iv},
+    key,
+    ct
+  );
+  const dec = new TextDecoder();
+  return dec.decode(ptBuf);
+}
+
+/**
+ * ============================
+ *  DERANGEMENT (Sattolo)
+ * ============================
+ * Produces one cycle permutation => no fixed points when n > 1.
+ */
+function sattoloCycle(indices){
+  const a = indices.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * i); // 0..i-1
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function makeAssignments(names){
+  if(names.length < 2) throw new Error("Need at least 2 participants.");
+  const idx = names.map((_,i)=>i);
+  const perm = sattoloCycle(idx); // recipient index for each position in perm order? We'll map giver i -> names[perm[i]]
+  const mapping = new Map();
+  for(let i=0;i<names.length;i++){
+    const giver = names[i];
+    const recipient = names[perm[i]];
+    if(giver === recipient) throw new Error("Self assignment occurred (unexpected).");
+    mapping.set(giver, recipient);
+  }
+  return mapping;
+}
+
+/**
+ * ============================
+ *  VERIFICATION (Admin-only)
+ * ============================
+ */
+function verifyAssignments(names, mapping){
+  const outgoing = new Map();
+  const incoming = new Map();
+  const outSet = new Set();
+  const inSet = new Set();
+
+  let selfCount = 0;
+  let duplicateOut = 0;
+  let duplicateIn = 0;
+
+  for(const n of names){ outgoing.set(n, 0); incoming.set(n, 0); }
+
+  for(const giver of names){
+    const rec = mapping.get(giver);
+    if(!rec) continue;
+    outgoing.set(giver, (outgoing.get(giver)||0)+1);
+    incoming.set(rec, (incoming.get(rec)||0)+1);
+
+    if(giver === rec) selfCount++;
+
+    const outKey = giver + "→" + rec;
+    if(outSet.has(outKey)) duplicateOut++;
+    outSet.add(outKey);
+
+    const inKey = rec;
+    if(inSet.has(inKey)) duplicateIn++; // if someone receives twice
+    inSet.add(inKey);
+  }
+
+  const rows = names.map(n => {
+    const rec = mapping.get(n);
+    return {
+      name:n,
+      outgoing: outgoing.get(n) || 0,
+      incoming: incoming.get(n) || 0,
+      self: rec === n,
+      dupOut: false, // computed per-row later if needed
+      dupIn: false,  // computed per-row later if needed
+      recipient: rec
+    };
+  });
+
+  // per-row duplicate flags
+  const seenOut = new Set();
+  const seenIn = new Set();
+  for(const r of rows){
+    const outKey = r.name + "→" + r.recipient;
+    if(seenOut.has(outKey)) r.dupOut = true;
+    seenOut.add(outKey);
+
+    const inKey = r.recipient;
+    if(seenIn.has(inKey)) r.dupIn = true;
+    seenIn.add(inKey);
+  }
+
+  const totalAssignments = names.length;
+  const allOutgoing1 = rows.every(r => r.outgoing === 1);
+  const allIncoming1 = rows.every(r => r.incoming === 1);
+  const noSelf = selfCount === 0;
+  const noDupIn = duplicateIn === 0;
+  const noDupOut = duplicateOut === 0;
+  const countMatch = mapping.size === names.length;
+
+  const passed = allOutgoing1 && allIncoming1 && noSelf && noDupIn && noDupOut && countMatch;
+
+  return {
+    passed,
+    checks: {
+      allOutgoing1, allIncoming1, noSelf, noDupIn, noDupOut, countMatch,
+      nParticipants: names.length, nAssignments: mapping.size, selfCount, duplicateIn, duplicateOut
+    },
+    rows
+  };
+}
+
+/**
+ * ============================
+ *  UI STATE
+ * ============================
+ */
+function isLockedData(){
+  return !!(ENCRYPTED_DATA && ENCRYPTED_DATA.locked);
+}
+
+function hasAdminUnlock(){
+  return !!(ENCRYPTED_DATA && ENCRYPTED_DATA.adminUnlock);
+}
+
+function showModal({title, body, showUnlock=false, primaryText="OK", onPrimary=null}){
+  $("modalTitle").textContent = title;
+  $("modalBody").innerHTML = body;
+  $("unlockForm").style.display = showUnlock ? "block" : "none";
+  $("modalPrimary").textContent = primaryText;
+
+  const modal = $("modal");
+  modal.dataset.open = "true";
+  modal.setAttribute("aria-hidden","false");
+
+  const close = () => {
+    modal.dataset.open = "false";
+    modal.setAttribute("aria-hidden","true");
+    $("unlockPass").value = "";
+    $("modalPrimary").onclick = null;
+  };
+
+  $("modalClose").onclick = close;
+  modal.onclick = (e) => { if(e.target === modal) close(); };
+
+  $("modalPrimary").onclick = async () => {
+    try{
+      if(onPrimary) await onPrimary();
+      close();
+    }catch(err){
+      const msg = (err && err.message) ? err.message : String(err);
+      $("modalBody").innerHTML = `<span class="badge"><span class="dot bad"></span>Error</span> ${escapeHtml(msg)}`;
+    }
+  };
+
+  setTimeout(()=> {
+    if(showUnlock) $("unlockPass").focus();
+    else $("modalPrimary").focus();
+  }, 0);
+}
+
+function escapeHtml(s){
+  return (s||"").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function setModeLabel(){
+  const locked = isLockedData();
+  const adminVisible = $("adminCard").style.display !== "none";
+  const label = adminVisible ? "Admin Mode" : "Participant Mode";
+  $("modeLabel").textContent = locked ? (adminVisible ? "Admin (Unlocked)" : "Participant Mode (Locked)") : label;
+}
+
+function setAdminVisibility(show){
+  $("adminCard").style.display = show ? "block" : "none";
+  setModeLabel();
+}
+
+/**
+ * ============================
+ *  PARTICIPANT FLOW
+ * ============================
+ */
+function populateParticipantNames(){
+  const sel = $("participantName");
+  sel.innerHTML = "";
+
+  const names = (ENCRYPTED_DATA && Array.isArray(ENCRYPTED_DATA.participants))
+    ? ENCRYPTED_DATA.participants.map(p => p.name)
+    : [];
+
+  if(names.length === 0){
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "— Not configured yet —";
+    sel.appendChild(opt);
+    sel.disabled = true;
+    return;
+  }
+
+  sel.disabled = false;
+  const opt0 = document.createElement("option");
+  opt0.value = "";
+  opt0.textContent = "Select your name…";
+  sel.appendChild(opt0);
+
+  for(const n of names){
+    const o = document.createElement("option");
+    o.value = n;
+    o.textContent = n;
+    sel.appendChild(o);
+  }
+}
+
+function participantMessage(kind, html){
+  const box = $("participantMsg");
+  box.style.display = "block";
+  const dotClass = kind === "good" ? "good" : kind === "bad" ? "bad" : "warn";
+  box.innerHTML = `
+    <div class="badge"><span class="dot ${dotClass}"></span>${kind === "good" ? "Success" : kind === "bad" ? "Denied" : "Note"}</div>
+    <div style="margin-top:10px">${html}</div>
+  `;
+}
+
+async function handleReveal(){
+  if(!ENCRYPTED_DATA || !Array.isArray(ENCRYPTED_DATA.participants)){
+    participantMessage("warn", "This page hasn’t been configured yet. Ask the admin to generate and publish encrypted data.");
+    return;
+  }
+  const name = $("participantName").value;
+  const code = $("participantCode").value.trim();
+  if(!name){
+    participantMessage("warn", "Please select your name.");
+    return;
+  }
+  if(code.length < 8){
+    participantMessage("warn", "Please enter your secret code.");
+    return;
+  }
+
+  const rec = ENCRYPTED_DATA.participants.find(p => p.name === name);
+  if(!rec){
+    participantMessage("bad", "Name not found in the published data.");
+    return;
+  }
+
+  $("revealBtn").disabled = true;
+  $("revealBtn").textContent = "Decrypting…";
+  try{
+    const iterations = (ENCRYPTED_DATA.kdf && ENCRYPTED_DATA.kdf.iterations) || DEFAULT_ITERATIONS;
+    const recipient = await decryptTextWithCode(rec, code, iterations);
+
+    // Basic sanity
+    const safeRecipient = normalizeName(recipient);
+    if(!safeRecipient){
+      throw new Error("Decryption succeeded but produced an empty recipient.");
+    }
+
+    participantMessage("good", `
+      <h3>Your recipient</h3>
+      <p class="recipient">🎁 <span>${escapeHtml(safeRecipient)}</span></p>
+      <div class="tiny">Keep this private. This page can’t reveal who’s gifting to you or anyone else.</div>
+    `);
+  }catch(err){
+    participantMessage("bad", "Incorrect code (or wrong name). Please double-check and try again.");
+  }finally{
+    $("revealBtn").disabled = false;
+    $("revealBtn").textContent = "Reveal my recipient";
+  }
+}
+
+/**
+ * ============================
+ *  ADMIN FLOW (Generation)
+ * ============================
+ */
+function parseNamesFromTextarea(){
+  const raw = $("namesInput").value.split("\n").map(normalizeName).filter(Boolean);
+  const names = uniq(raw);
+  return { rawCount: raw.length, names };
+}
+
+async function generateAdminData(){
+  const { rawCount, names } = parseNamesFromTextarea();
+
+  if(names.length < 2){
+    throw new Error("Add at least 2 participant names.");
+  }
+  if(rawCount !== names.length){
+    // duplicates removed; warn but proceed
+  }
+
+  const pass1 = $("adminPassphrase").value;
+  const pass2 = $("adminPassphrase2").value;
+  let adminPassphrase = null;
+  if(pass1 || pass2){
+    if(pass1.length < 10) throw new Error("Admin passphrase should be at least 10 characters (recommended: a full sentence).");
+    if(pass1 !== pass2) throw new Error("Admin passphrase confirmation does not match.");
+    adminPassphrase = pass1;
+  }
+
+  // Create a random derangement mapping
+  const mapping = makeAssignments(names);
+
+  // Generate per-participant secret codes (not stored in published JSON)
+  const codesByName = new Map();
+  for(const n of names){
+    codesByName.set(n, randomCode());
+  }
+
+  // Encrypt each recipient using that participant's code
+  const participants = [];
+  const iterations = DEFAULT_ITERATIONS;
+
+  for(const giver of names){
+    const recipient = mapping.get(giver);
+    const code = codesByName.get(giver);
+    const blob = await encryptTextWithCode(recipient, code, iterations);
+    participants.push({ name: giver, ...blob });
+  }
+
+  // Optional admin unlock token encrypted by passphrase
+  let adminUnlock = null;
+  if(adminPassphrase){
+    const token = "admin-unlock::" + bytesToB64(secureRandomBytes(24));
+    adminUnlock = await encryptTextWithCode(token, adminPassphrase, iterations);
+  }
+
+  const jsonUnlocked = {
+    version: APP_VERSION,
+    kdf: {name:"PBKDF2", hash:"SHA-256", iterations},
+    cipher: {name:"AES-GCM"},
+    locked: false,
+    participants,
+    ...(adminUnlock ? {adminUnlock} : {})
+  };
+
+  const jsonLocked = {
+    ...jsonUnlocked,
+    locked: true
+  };
+
+  staging = { names, codesByName, mapping, jsonUnlocked, jsonLocked };
+
+  // Render admin outputs
+  renderVerification();
+  renderCodes();
+  renderJson(jsonUnlocked);
+
+  $("adminOutput").style.display = "block";
+  $("lockBtn").disabled = false;
+}
+
+function renderVerification(){
+  if(!staging) return;
+  const { names, mapping } = staging;
+  const v = verifyAssignments(names, mapping);
+
+  const dot = v.passed ? "good" : "bad";
+  const status = v.passed ? "PASSED" : "FAILED";
+
+  $("verifySummary").innerHTML = `
+    <span class="badge"><span class="dot ${dot}"></span>${status}</span>
+    <div style="margin-top:8px; line-height:1.55">
+      <div><strong>Participants:</strong> ${v.checks.nParticipants} &nbsp;·&nbsp; <strong>Assignments:</strong> ${v.checks.nAssignments}</div>
+      <div class="tiny">
+        Outgoing=1 for all: <strong>${v.checks.allOutgoing1}</strong> ·
+        Incoming=1 for all: <strong>${v.checks.allIncoming1}</strong> ·
+        No self: <strong>${v.checks.noSelf}</strong> ·
+        No duplicate incoming: <strong>${v.checks.noDupIn}</strong>
+      </div>
+    </div>
+  `;
+
+  const tbody = $("verifyTable").querySelector("tbody");
+  tbody.innerHTML = "";
+
+  // Derive incoming counts explicitly for display
+  const incomingCount = new Map(names.map(n => [n,0]));
+  for(const giver of names){
+    const rec = mapping.get(giver);
+    incomingCount.set(rec, (incomingCount.get(rec)||0)+1);
+  }
+
+  // For duplicates flags
+  const seenIn = new Set();
+  const dupInNames = new Set();
+  for(const giver of names){
+    const rec = mapping.get(giver);
+    if(seenIn.has(rec)) dupInNames.add(rec);
+    seenIn.add(rec);
+  }
+
+  for(const giver of names){
+    const rec = mapping.get(giver);
+    const out = 1;
+    const inc = incomingCount.get(giver) || 0;
+    const self = giver === rec;
+    const dupIn = dupInNames.has(giver);
+    const fingerprint = subtleHashString(giver + "→" + rec);
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(giver)}</td>
+      <td>${out}</td>
+      <td>${inc}</td>
+      <td>${self ? "YES" : "no"}</td>
+      <td>${"no"}</td>
+      <td>${dupIn ? "YES" : "no"}</td>
+      <td>${fingerprint}</td>
+    `;
+    // Add a header alignment row fix: last column not defined in header => we keep it subtle by not showing header.
+    // We'll just append with style: the CSS already formats last td as mono.
+    // To keep table consistent, we "hide" last column header by not having it.
+    tbody.appendChild(tr);
+  }
+
+  // Patch header to include fingerprint label (safely, once)
+  const theadRow = $("verifyTable").querySelector("thead tr");
+  if(theadRow.children.length === 6){
+    const th = document.createElement("th");
+    th.textContent = "Cipher FP";
+    theadRow.appendChild(th);
+  }
+}
+
+function renderCodes(){
+  const list = $("codesList");
+  list.innerHTML = "";
+  if(!staging) return;
+
+  for(const name of staging.names){
+    const code = staging.codesByName.get(name);
+    const div = document.createElement("div");
+    div.className = "codeitem";
+    div.innerHTML = `
+      <div class="name">${escapeHtml(name)}</div>
+      <div class="code">${escapeHtml(code)}</div>
+    `;
+    list.appendChild(div);
+  }
+}
+
+function renderJson(obj){
+  $("jsonOut").textContent = JSON.stringify(obj, null, 2);
+}
+
+function copyJson(){
+  const txt = $("jsonOut").textContent;
+  navigator.clipboard.writeText(txt).then(()=>{
+    showModal({
+      title:"Copied",
+      body:`<span class="badge"><span class="dot good"></span>OK</span> Encrypted JSON copied to clipboard.`,
+      primaryText:"Done"
+    });
+  }).catch(()=>{
+    showModal({
+      title:"Copy failed",
+      body:`Your browser blocked clipboard access. Select the JSON and copy manually.`,
+      primaryText:"OK"
+    });
+  });
+}
+
+function lockAndHide(){
+  if(!staging) return;
+  renderJson(staging.jsonLocked);
+
+  // Hide admin panel in this session to simulate post-publish locked mode.
+  setAdminVisibility(false);
+
+  showModal({
+    title:"Locked for participants",
+    body: `
+      <span class="badge"><span class="dot good"></span>Locked</span>
+      <div style="margin-top:10px; line-height:1.55">
+        The JSON now contains <strong>locked: true</strong>. Publish it to GitHub Pages by replacing <span class="mono">ENCRYPTED_DATA</span> in this file.
+        <div class="tiny" style="margin-top:8px">
+          If you set an admin passphrase, you can later unlock admin mode by clicking “Admin” in the footer and entering that passphrase.
+          Without a passphrase, unlocking requires manually editing the file to re-enable admin generation.
+        </div>
+      </div>
+    `,
+    primaryText:"OK"
+  });
+}
+
+/**
+ * ============================
+ *  ADMIN UNLOCK (Static constraints)
+ * ============================
+ */
+async function tryUnlockAdmin(passphrase){
+  if(!ENCRYPTED_DATA || !ENCRYPTED_DATA.adminUnlock){
+    throw new Error("This published file does not include an admin unlock token. To re-enable admin mode, you must edit the file manually (developer step).");
+  }
+  const iterations = (ENCRYPTED_DATA.kdf && ENCRYPTED_DATA.kdf.iterations) || DEFAULT_ITERATIONS;
+
+  // Attempt decrypt: if passphrase is wrong, AES-GCM will throw.
+  const token = await decryptTextWithCode(ENCRYPTED_DATA.adminUnlock, passphrase, iterations);
+  if(!token.startsWith("admin-unlock::")) throw new Error("Incorrect passphrase.");
+  adminUnlockedThisSession = true;
+  setAdminVisibility(true);
+  showModal({
+    title:"Admin unlocked",
+    body:`<span class="badge"><span class="dot good"></span>Unlocked</span> Admin mode is enabled for this browser tab only.`,
+    primaryText:"OK"
+  });
+}
+
+/**
+ * ============================
+ *  SNOW (cosmetic)
+ * ============================
+ */
+const snow = {
+  on:false,
+  flakes:[],
+  raf:0
+};
+
+function resizeSnowCanvas(){
+  const c = $("snowCanvas");
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  c.width = Math.floor(window.innerWidth * dpr);
+  c.height = Math.floor(window.innerHeight * dpr);
+  c.style.width = window.innerWidth + "px";
+  c.style.height = window.innerHeight + "px";
+  return dpr;
+}
+
+function initSnow(){
+  const c = $("snowCanvas");
+  const dpr = resizeSnowCanvas();
+  const n = Math.floor((window.innerWidth * window.innerHeight) / 35000);
+  snow.flakes = [];
+  for(let i=0;i<n;i++){
+    snow.flakes.push({
+      x: Math.random() * c.width,
+      y: Math.random() * c.height,
+      r: (Math.random()*1.6 + 0.6) * dpr,
+      vx: (Math.random()*0.25 - 0.125) * dpr,
+      vy: (Math.random()*0.55 + 0.25) * dpr,
+      a: Math.random()*0.55 + 0.25
+    });
+  }
+}
+
+function tickSnow(){
+  const c = $("snowCanvas");
+  const ctx = c.getContext("2d");
+  ctx.clearRect(0,0,c.width,c.height);
+  for(const f of snow.flakes){
+    f.x += f.vx;
+    f.y += f.vy;
+    if(f.y > c.height + 10) { f.y = -10; f.x = Math.random()*c.width; }
+    if(f.x < -10) f.x = c.width + 10;
+    if(f.x > c.width + 10) f.x = -10;
+
+    ctx.globalAlpha = f.a;
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, f.r, 0, Math.PI*2);
+    ctx.fillStyle = "white";
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  snow.raf = requestAnimationFrame(tickSnow);
+}
+
+function setSnow(on){
+  snow.on = on;
+  const canvas = $("snowCanvas");
+  canvas.dataset.on = on ? "true" : "false";
+  $("snowSwitch").dataset.on = on ? "true" : "false";
+
+  if(on){
+    initSnow();
+    cancelAnimationFrame(snow.raf);
+    snow.raf = requestAnimationFrame(tickSnow);
+  }else{
+    cancelAnimationFrame(snow.raf);
+    const ctx = canvas.getContext("2d");
+    ctx && ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+}
+
+/**
+ * ============================
+ *  BOOTSTRAP
+ * ============================
+ */
+function determineInitialMode(){
+  const configured = !!(ENCRYPTED_DATA && Array.isArray(ENCRYPTED_DATA.participants) && ENCRYPTED_DATA.participants.length);
+  const locked = isLockedData();
+
+  // If not configured, show admin to allow generation (developer opening state).
+  if(!configured){
+    setAdminVisibility(true);
+    return;
+  }
+
+  // If configured + locked => participant only, unless unlocked this session.
+  if(locked && !adminUnlockedThisSession){
+    setAdminVisibility(false);
+    return;
+  }
+
+  // If configured but unlocked => show admin (useful before publishing locked JSON)
+  if(!locked){
+    setAdminVisibility(true);
+    return;
+  }
+
+  // locked but session unlocked
+  setAdminVisibility(true);
+}
+
+function wireEvents(){
+  $("revealBtn").addEventListener("click", handleReveal);
+  $("clearBtn").addEventListener("click", () => {
+    $("participantCode").value = "";
+    $("participantMsg").style.display = "none";
+    $("participantCode").focus();
+  });
+
+  $("generateBtn").addEventListener("click", async () => {
+    $("generateBtn").disabled = true;
+    const old = $("generateBtn").textContent;
+    $("generateBtn").textContent = "Generating…";
+    try{
+      await generateAdminData();
+    }catch(err){
+      showModal({
+        title:"Cannot generate",
+        body:`<span class="badge"><span class="dot bad"></span>Blocked</span> ${escapeHtml(err.message || String(err))}`,
+        primaryText:"OK"
+      });
+    }finally{
+      $("generateBtn").disabled = false;
+      $("generateBtn").textContent = old;
+    }
+  });
+
+  $("copyJsonBtn").addEventListener("click", copyJson);
+  $("lockBtn").addEventListener("click", lockAndHide);
+
+  $("adminLink").addEventListener("click", (e) => {
+    e.preventDefault();
+
+    // If admin currently visible, offer to hide (session).
+    if($("adminCard").style.display !== "none"){
+      showModal({
+        title:"Admin",
+        body:`<span class="badge"><span class="dot warn"></span>Session</span> Hide admin panel for this session? (Participants won’t see it unless they know the passphrase.)`,
+        primaryText:"Hide",
+        onPrimary: async () => { setAdminVisibility(false); }
+      });
+      return;
+    }
+
+    // If locked and has admin unlock token => prompt passphrase.
+    if(isLockedData()){
+      if(hasAdminUnlock()){
+        showModal({
+          title:"Admin Unlock",
+          body:`Enter the admin passphrase to unlock admin mode for <strong>this tab only</strong>.`,
+          showUnlock:true,
+          primaryText:"Unlock",
+          onPrimary: async () => {
+            const pass = $("unlockPass").value;
+            if(!pass) throw new Error("Passphrase required.");
+            await tryUnlockAdmin(pass);
+          }
+        });
+      }else{
+        showModal({
+          title:"Admin is locked",
+          body:`
+            <span class="badge"><span class="dot bad"></span>Locked</span>
+            This published file does not include an admin unlock token.
+            <div class="tiny" style="margin-top:8px">
+              To re-enable admin mode, edit the file manually:
+              set <span class="mono">ENCRYPTED_DATA</span> to <span class="mono">null</span> (or publish an unlocked JSON),
+              then refresh.
+            </div>
+          `,
+          primaryText:"OK"
+        });
+      }
+      return;
+    }
+
+    // Unlocked data: show admin without passphrase
+    setAdminVisibility(true);
+  });
+
+  $("aboutLink").addEventListener("click", (e) => {
+    e.preventDefault();
+    showModal({
+      title:"About",
+      body:`
+        <div class="note">
+          <strong>What’s stored in the published HTML?</strong><br/>
+          Participant names + per-participant encrypted recipient blobs (AES-GCM), plus optional admin unlock token.
+          <div class="divider"></div>
+          <strong>What’s never stored?</strong><br/>
+          Secret codes, and the full assignment mapping in plaintext.
+          <div class="divider"></div>
+          <strong>Threat model (realistic for static hosting):</strong><br/>
+          Anyone can view the ciphertext blobs, but without a participant’s code they can’t decrypt that participant’s recipient.
+        </div>
+      `,
+      primaryText:"OK"
+    });
+  });
+
+  // Snow switch
+  const toggle = () => setSnow(!snow.on);
+  $("snowSwitch").addEventListener("click", toggle);
+  $("snowSwitch").addEventListener("keydown", (e) => {
+    if(e.key === "Enter" || e.key === " "){ e.preventDefault(); toggle(); }
+  });
+
+  window.addEventListener("resize", () => {
+    if(snow.on){
+      initSnow();
+    }
+  });
+}
+
+function enforceParticipantUIWhenLocked(){
+  // Extra safety: if locked and not unlocked, ensure admin DOM is hidden even if someone toggles CSS.
+  if(isLockedData() && !adminUnlockedThisSession){
+    setAdminVisibility(false);
+  }
+}
+
+(function main(){
+  populateParticipantNames();
+  wireEvents();
+  determineInitialMode();
+  enforceParticipantUIWhenLocked();
+
+  // Cosmetic: auto-enable snow in December? Keep OFF by default (professional).
+  // setSnow(true);
+
+  // If configured but not locked, show gentle admin reminder
+  if(ENCRYPTED_DATA && ENCRYPTED_DATA.locked === false){
+    participantMessage("warn", `
+      This page is currently <strong>unlocked</strong>. Participants can still use it, but the admin panel is available.
+      Ask the admin to click <strong>Lock &amp; Hide Admin Mode</strong> and publish the locked JSON.
+    `);
+  }
+})();
+</script>
+</body>
+</html>
