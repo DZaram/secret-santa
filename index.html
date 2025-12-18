@@ -536,7 +536,85 @@ Dana"></textarea>
  * After admin generation, copy the produced JSON into ENCRYPTED_DATA and push to GitHub.
  * - Secret codes are NEVER stored here.
  */
-const ENCRYPTED_DATA = null;
+const ENCRYPTED_DATA = {
+  "version": 1,
+  "kdf": {
+    "name": "PBKDF2",
+    "hash": "SHA-256",
+    "iterations": 200000
+  },
+  "cipher": {
+    "name": "AES-GCM"
+  },
+  "locked": false,
+  "participants": [
+    {
+      "name": "Dade",
+      "salt": "BmPi0cApzt8_zAa_5cQ2JA",
+      "iv": "ciL89XL8leE431Ae",
+      "ct": "h3frhQE5kFKPq7l_SQX-Tv9Y7oY"
+    },
+    {
+      "name": "Tadi",
+      "salt": "eJWrdak0k9DsbwK32Pn9vA",
+      "iv": "Z88n-peHGkaDlYBi",
+      "ct": "sr3QmR9o2eiHX-W6NW_vQItniWpV6w"
+    },
+    {
+      "name": "Ema",
+      "salt": "Vxh8BiafHmEy94OItDsx1A",
+      "iv": "UU-i_2zp5M8TM_p9",
+      "ct": "RbKXknRHXZGJUjarORSbJVQxzCk"
+    },
+    {
+      "name": "Fari",
+      "salt": "qxiKhtXkuHxFYlFGq33VIQ",
+      "iv": "RtBnnWZkjsMLhiwM",
+      "ct": "KP1cPm0AnIXjGFMu8YGEN-DHIks"
+    },
+    {
+      "name": "Gian",
+      "salt": "qmnUpJvokDFzzU3vG3z6kQ",
+      "iv": "rTagCVpknwiV2siU",
+      "ct": "6BNBhwW6eRmSlvrzB1aL5nkEajU"
+    },
+    {
+      "name": "Gneppe",
+      "salt": "iRSZZEnhZRdCIFpM42nkgg",
+      "iv": "IY6lC7kdjemw7E7a",
+      "ct": "XDhzb_ICBDz09G7V0FTd8hiP_9A"
+    },
+    {
+      "name": "Simo",
+      "salt": "052feK2ZRQc_Wmi3SJYQqA",
+      "iv": "Gll2piMFKlK27udC",
+      "ct": "TbV3sDSV10tv6TOAqcnq_SHS4AU"
+    },
+    {
+      "name": "Tini",
+      "salt": "TfUjnBso-TFsLQNZnObOAw",
+      "iv": "_zbyegTiuzIpycZf",
+      "ct": "FbDIonrf5oCjcl1tVTLHWEGjbg"
+    },
+    {
+      "name": "Tony",
+      "salt": "ESouW1vvv3pMFjvxMopj4w",
+      "iv": "HhgQZDPdnYo8QPxe",
+      "ct": "BOKBZrDgR470Q56AamvZQKUK34Q"
+    },
+    {
+      "name": "Zano",
+      "salt": "81nXxCAtHRbySdZzBuPXYQ",
+      "iv": "N_2B_lOL306kehvD",
+      "ct": "WxXzvNqDn6XiolYAWF0ls4BzErE"
+    }
+  ],
+  "adminUnlock": {
+    "salt": "jpa7X7LAKLsXC27KExx_gw",
+    "iv": "kLgzd4AxXgiJO5e6",
+    "ct": "gBRbcEl1IZqu4bogfcwGug9qMaIfI1n6Cf-vofXQOrh7w9gqz60lpPH_0adKjxEUIfjaTHH52xakz-dVgjE"
+  }
+};
 /*
 Example shape after generation:
 {
